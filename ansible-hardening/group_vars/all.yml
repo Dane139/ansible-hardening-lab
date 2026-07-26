@@ -1,0 +1,21 @@
+ssh_port: 22
+admin_user: azureadmin
+ 
+allowed_tcp_ports:
+  - 22
+  - 80
+  - 443
+ 
+timezone: "UTC"
+ 
+fail2ban_bantime: "1h"
+fail2ban_maxretry: 5
+ 
+login_banner: |
+  ******************************************************************
+  *  Authorized access only. All activity is logged and audited.  *
+  *  Disconnect now if you are not an authorized user.             *
+  ******************************************************************
+ 
+# This value lives in the encrypted vault, not here.
+admin_password: "{{ vault_admin_password }}"

@@ -1,0 +1,7 @@
+ssh_port: 22
+admin_user: azureadmin
+allowed_tcp_ports:
+  - 22
+timezone: "UTC"
+fail2ban_bantime: "1h"
+fail2ban_maxretry: 5

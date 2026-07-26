@@ -1,0 +1,5 @@
+- name: Apply the security hardening baseline to the fleet
+  hosts: hardened
+  become: true
+  roles:
+    - hardening

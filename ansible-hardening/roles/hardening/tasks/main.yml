@@ -1,0 +1,84 @@
+- name: Update apt cache and apply security upgrades
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+    cache_valid_time: 3600
+ 
+- name: Install baseline hardening packages
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+      - unattended-upgrades
+    state: present
+ 
+# Set a password on the admin account, pulled from the encrypted vault.
+# The fixed salt is intentional: password_hash() generates a random salt by
+# default, which would produce a different hash every run and report "changed"
+# forever. A stable salt makes this task converge - the cost of idempotency.
+- name: Set the admin account password from Vault
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    password: "{{ admin_password | password_hash('sha512', 'labstaticsalt99') }}" 
+    
+- name: Set the system timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+ 
+# Firewall: open the required ports FIRST, then turn the firewall on.
+# This guarantees SSH is allowed before "deny all" takes effect.
+- name: Allow required TCP ports through the host firewall
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ allowed_tcp_ports }}"
+ 
+- name: Enable the firewall with a default-deny policy on incoming traffic
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+ 
+# SSH hardening: write the config, then validate the WHOLE config before any
+# restart is allowed. If validation fails, the play stops and SSH is never
+# restarted with a broken config - you stay connected.
+- name: Deploy the hardened SSH drop-in config
+  ansible.builtin.template:
+    src: 00-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ssh
+ 
+- name: Validate the full SSH configuration
+  ansible.builtin.command: sshd -t
+  changed_when: false
+ 
+- name: Deploy the login banner
+  ansible.builtin.template:
+    src: issue.net.j2
+    dest: /etc/issue.net
+    mode: "0644"
+ 
+- name: Deploy the fail2ban jail configuration
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: "0644"
+  notify: Restart fail2ban
+ 
+- name: Enable and start fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+ 
+- name: Enable automatic security updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";

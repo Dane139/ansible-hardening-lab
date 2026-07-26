@@ -1,0 +1,21 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+
+# Ansible / secrets
+**/vault.yml
+**/inventory.ini
+*.retry
+
+# SSH keys
+ansible_lab*
+*.pem
+id_ed25519*
+
+# OS junk
+.DS_Store

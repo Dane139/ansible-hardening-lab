@@ -16,7 +16,7 @@ This lab fixes that with a repeatable baseline. Terraform builds the fleet, Ansi
 
 ## Architecture
 
-![Architecture diagram](./assets/architecture.svg)
+![Architecture diagram](./assets/architecture.png)
 
 Terraform builds the network and the VMs, then writes the Ansible inventory automatically so there is no copying IP addresses by hand. Ansible connects over SSH and applies the hardening role to both hosts.
 
